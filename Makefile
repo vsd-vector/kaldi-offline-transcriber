@@ -389,6 +389,9 @@ build/trans/%/$(FINAL_PASS)$(DOT_PUNCTUATED).trs: build/trans/%/$(FINAL_PASS)$(D
 
 %.srt: %.json
 	./local/json2srt.py $^ > $@
+	
+%.spksrt: %.json
+        ./local/json2srt.py --speakers $^ > $@
 
 %.txt: %.trs
 	cat $^  | grep -v "^<" > $@
