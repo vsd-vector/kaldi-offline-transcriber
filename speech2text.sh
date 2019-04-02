@@ -40,7 +40,7 @@ basename="${filename%.*}"
 
 nthreads_arg="nthreads=${nthreads}"
 
-(cd $BASEDIR; make $nthreads_arg build/output/$basename.{txt,json,trs,ctm,srt,with-compounds.ctm}; if $clean ; then make .$basename.clean; rm src-audio/$filename; fi)
+(cd $BASEDIR; make $nthreads_arg build/output/$basename.{txt,json,trs,ctm,srt,with-compounds.ctm})
 
 echo "Finished transcribing, result is in files $BASEDIR/build/output/${basename%.*}.{txt,json,trs,ctm,srt,with-compounds.ctm}"
 
@@ -73,4 +73,4 @@ if [ ! -z $with_compounds_ctm ]; then
   cp $BASEDIR/build/output/${basename}.with-compounds.ctm $with_compounds_ctm
 fi
 
-rm -rf $BASEDIR/build/output/*
+if $clean ; then make .$basename.cleanest; rm src-audio/$filename; fi
