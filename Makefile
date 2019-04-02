@@ -53,6 +53,8 @@ LM_SCALE?=10
 
 DO_PUNCTUATION?=no
 
+DO_UNSEGMENT_CTM?=no
+
 ifeq "yes" "$(DO_PUNCTUATION)"
   PUNCTUATE_JSON_CMD?=cat
   DOT_PUNCTUATED=.punctuated
@@ -364,9 +366,14 @@ endif
 
 %.with-compounds.synced.ctm: %.segmented.with-compounds.ctm
 	cat $^ | ./scripts/unsegment-ctm.py | LC_ALL=C sort -k 1,1 -k 3,3n -k 4,4n > $@
-
+	
+ifeq "yes" "$(DO_UNSEGMENT_CTM)"
 %.synced.ctm: %.segmented.ctm
 	cat $^ | ./scripts/unsegment-ctm.py | LC_ALL=C sort -k 1,1 -k 3,3n -k 4,4n > $@
+else
+%.synced.ctm: %.segmented.ctm
+	cat $^ | ./scripts/format-ctm.py | LC_ALL=C sort -k 1,1 -k 3,3n -k 4,4n > $@
+endif
 	
 %.ctm: %.synced.ctm
 	cat $^ | grep -v "<" > $@
