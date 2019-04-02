@@ -117,8 +117,7 @@ gen_to_ord_gen_specials = {
 }
 
   
-@pytest.fixture(scope="module") 
-def words2num_fst():
+def words2num_impl():
     
   left_break = a("[BOS]") | a(" ") 
   right_break = a("[EOS]") | a(" ")
@@ -261,9 +260,13 @@ def  test_complex_inflections(words2num_fst):
 def  test_invalid_chars(words2num_fst):
   assert words2num(words2num_fst, "€¨€½|") == "€¨€½|"
 
-
+@pytest.fixture(scope="module") 
+def words2num_fst():
+  words2num_impl()
+  
+  
 if __name__ == '__main__':
-  words2num_fst = words2num_fst()
+  words2num_fst = words2num_impl()
   while 1:    
     l = sys.stdin.readline()
     if not l: break
