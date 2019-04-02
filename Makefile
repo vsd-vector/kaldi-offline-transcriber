@@ -486,4 +486,4 @@ build/sid/%/sid-result.txt: build/sid/%/lda_plda_scores
 
 # Also deletes the output files	
 .%.cleanest: .%.clean
-	rm -rf build/output/$*.{trs,txt,ctm,with-compounds.ctm,srt,json}
+	rm -rf build/output/$*.{trs,txt,ctm,with-compounds.ctm,srt,spksrt,json}
