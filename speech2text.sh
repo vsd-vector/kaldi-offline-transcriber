@@ -66,7 +66,7 @@ if [ ! -z $srt ]; then
 fi
 
 if [ ! -z $spksrt ]; then
-  cp $BASEDIR/build/output/${basename}.spksrt $srt
+  cp $BASEDIR/build/output/${basename}.spksrt $spksrt
 fi
 
 if [ ! -z $with_compounds_ctm ]; then
