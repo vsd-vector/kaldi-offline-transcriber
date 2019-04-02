@@ -73,4 +73,4 @@ if [ ! -z $with_compounds_ctm ]; then
   cp $BASEDIR/build/output/${basename}.with-compounds.ctm $with_compounds_ctm
 fi
 
-
+rm -rf $BASEDIR/build/output/*
