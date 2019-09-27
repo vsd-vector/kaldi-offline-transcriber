@@ -372,7 +372,10 @@ ifeq "yes" "$(DO_UNSEGMENT_CTM)"
 	cat $^ | ./scripts/unsegment-ctm.py | LC_ALL=C sort -k 1,1 -k 3,3n -k 4,4n > $@
 else
 %.synced.ctm: %.segmented.ctm
-	cat $^ | ./scripts/format-ctm.py | LC_ALL=C sort -k 1,1 -k 3,3n -k 4,4n > $@
+	cat $^ | ./scripts/format-ctm.py |\
+	awk '{split($1,x,"-"); split(x[2],y,"_"); print y[2]+0" "NR" "$0}' |\
+	LC_ALL=C sort -n -s -k1,1 |\
+	awk '{for (i=3; i<NF; i++) printf $i" "; print $NF}' > $@
 endif
 	
 %.ctm: %.synced.ctm
