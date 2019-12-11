@@ -7,7 +7,7 @@ import re
 from collections import OrderedDict
 from decimal import Decimal
 
-def get_turn(start, speaker_id, sections, speakers, new_turn_sil_length):
+def get_turn(start, speaker_id, sections, speakers, orig_segment_start, new_turn_sil_length, original_segments):
   if speaker_id not in speakers:
     speakers[speaker_id] = {}
     
@@ -20,8 +20,17 @@ def get_turn(start, speaker_id, sections, speakers, new_turn_sil_length):
   if current_section is None:
     raise Exception("No speech section for word starting at %.3f" % start)
   turns = section.setdefault("turns", [])
-  if len(turns) == 0 or turns[-1]["speaker"] != speaker_id or turns[-1]["end"] + new_turn_sil_length < start:
-    turns.append({"speaker" : speaker_id, "start" : start, "end" : start, "transcript" : "", "words" : []})
+  if (
+       len(turns) == 0 or turns[-1]["speaker"] != speaker_id or 
+       (turns[-1]["end"] + new_turn_sil_length < start and not original_segments) or
+       (orig_segment_start != turns[-1]["orig_segment_start"] and original_segments)
+     ):
+    turns.append({"speaker" : speaker_id, 
+                  "start" : start, 
+                  "end" : start, 
+                  "transcript" : "", 
+                  "orig_segment_start" : orig_segment_start, 
+                  "words" : []})
     
   return turns[-1]
 
@@ -30,6 +39,7 @@ parser.add_argument('--new-turn-sil-length', default="2.0", type=Decimal, help="
 parser.add_argument('--speech-padding', default="0.25", type=Decimal, help="Speech segments are padded by this amount")
 parser.add_argument('--pms-seg', help="The pms (speech/non-speech segmentation) file from diarization")
 parser.add_argument('--speaker-names', help="File that maps peaker IDs to names")
+parser.add_argument('--original-segments', help="preserve original segments from CTM", default=False, action="store_const", const=True)
 parser.add_argument('segmented_ctm')
 
 args = parser.parse_args()
@@ -79,7 +89,7 @@ for l in open(args.segmented_ctm):
     word_dict = OrderedDict([("word", word), ("start", word_start), ("end", word_end)])
     if len(ss) > 5:
       word_dict["confidence"] = Decimal(ss[5])
-    turn = get_turn(word_start, speaker_id, sections, speakers, args.new_turn_sil_length)
+    turn = get_turn(word_start, speaker_id, sections, speakers, segment_start, args.new_turn_sil_length, args.original_segments)
     #print(turn)
     turn["words"].append(word_dict)
     turn["end"] = word_end
