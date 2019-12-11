@@ -105,16 +105,20 @@ def split_words(words):
   else:
     return []
 
-parser = argparse.ArgumentParser("Converts JSON format to SRT subtitle format, by fuzzily finding optimal split points")
+parser = argparse.ArgumentParser("Converts JSON format to a pair of SRT and CTM files, also fuzzily finds optimal split points")
 parser.add_argument('json', help="JSON input file")
+parser.add_argument('srt', help="SRT output file")
+parser.add_argument('ctm', help="CTM output file")
 parser.add_argument('--speakers', help="output speaker labels", default=False, action="store_const", const=True)
 parser.add_argument('--nosplit', help="disable subtitle splitting", default=False, action="store_const", const=True)
-      
+
 args = parser.parse_args()
-      
+
 trans = json.load(open(args.json))
 
 sections = trans["sections"]
+srt = open(args.srt, "w", encoding="utf-8")
+ctm = open(args.ctm, "w", encoding="utf-8")
 j = 1
 for section in sections:
   if section["type"] == "speech":
@@ -132,13 +136,24 @@ for section in sections:
             text = " ".join([get_word(word) for word in words[splits[i]:splits[i+1]]])
             if args.speakers:
                 text = turn.get("speaker") + ": " + text
+
+            # write srt
             start = words[splits[i]]["start"]
             end = words[splits[i+1] - 1]["end"]
-                        
+
             datetime1 = datetime.datetime.utcfromtimestamp(start)
             datetime2 = datetime.datetime.utcfromtimestamp(end)
-            print(j)
-            print("%s --> %s" % (datetime1.strftime('%H:%M:%S,%f')[:-3], datetime2.strftime('%H:%M:%S,%f')[:-3]))
-            print(text)
-            print()
+
+            # write ctm
+            for w in words[splits[i]:splits[i+1]]:
+                speaker = turn.get("speaker") if args.speakers else "S0"
+                utt_id = "%s-part_%0.3f-%0.3f" % (speaker, start, end)
+                word_start = w["start"] - start
+                word_end = w["end"] - w["start"]
+                ctm.write("%s 1 %0.3f %0.3f %s %s\n" % (utt_id, word_start, word_end, get_word(w), w["confidence"]))
+
+            srt.write(str(j) + "\n")
+            srt.write("%s --> %s\n" % (datetime1.strftime('%H:%M:%S,%f')[:-3], datetime2.strftime('%H:%M:%S,%f')[:-3]))
+            srt.write(text+"\n")
+            srt.write("\n")
             j += 1
