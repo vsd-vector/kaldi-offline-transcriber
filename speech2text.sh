@@ -26,7 +26,7 @@ if [ $# -ne 1 ]; then
   echo "  --trs <trs-file>                 # Put the result in trs file (XML file for Transcriber)"
   echo "  --ctm <ctm-file>                 # Put the result in CTM file (one line pwer word with timing information)"
   echo "  --srt <srt-file>                 # Put the result in SRT file (subtitles for e.g. VLC)"
-  echo "  --spksrt <srt-file>              # Put the result in SRT file with speaker labels"
+  echo "  --spksrt <srt-file>              # Put the result in SRT file with speaker labels (no subsegmentation)"
   echo "  --with-compounds-ctm <ctm-file>  # Put the result in CTM file (with compound break symbols)"
   echo "  --clean (true|false)  # Delete intermediate files generated during decoding (true by default)"
   exit 1;
