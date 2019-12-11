@@ -108,6 +108,7 @@ def split_words(words):
 parser = argparse.ArgumentParser("Converts JSON format to SRT subtitle format, by fuzzily finding optimal split points")
 parser.add_argument('json', help="JSON input file")
 parser.add_argument('--speakers', help="output speaker labels", default=False, action="store_const", const=True)
+parser.add_argument('--nosplit', help="disable subtitle splitting", default=False, action="store_const", const=True)
       
 args = parser.parse_args()
       
@@ -122,7 +123,10 @@ for section in sections:
       for turn in turns:
         words = turn.get("words", None)
         if words:
-          split_list = split_words(words)
+          if args.nosplit:
+            split_list = []
+          else:
+            split_list = split_words(words)
           splits = [0] + split_list + [len(words)]
           for i in range(len(splits) - 1):
             text = " ".join([get_word(word) for word in words[splits[i]:splits[i+1]]])
