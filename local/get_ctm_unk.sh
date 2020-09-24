@@ -79,24 +79,28 @@ if [ $stage -le 0 ]; then
     # second, get CTM with confidences
     $cmd LMWT=$min_lmwt:$max_lmwt $dir/scoring/log/get_ctm2.LMWT.log \
       set -o pipefail '&&' mkdir -p $dir/score_LMWT/ '&&' \
-      lattice-align-words $lang/phones/word_boundary.int $model "ark:gunzip -c $lats|" ark:- \| \
+      lattice-align-words-lexicon $lang/phones/align_lexicon.int $model "ark:gunzip -c $lats|" ark:- \| \
       lattice-to-ctm-conf --frame-shift=$frame_shift --decode-mbr=false --inv-acoustic-scale=LMWT \
         ark:- "ark:lattice-best-path ark:$dir/score_LMWT/$name.1best.lat ark:- |" $dir/score_LMWT/$name.tmp1.ctm || exit 1;
     
     # third, get CTM with UNKs decoded  
-    $cmd LMWT=$min_lmwt:$max_lmwt $dir/scoring/log/get_ctm3.LMWT.log \
-      set -o pipefail '&&' mkdir -p $dir/score_LMWT/ '&&' \
-      lattice-align-words $lang/phones/word_boundary.int $model ark:$dir/score_LMWT/$name.1best.lat ark:- \| \
-      lattice-arc-post --acoustic-scale=0.1 $model ark:- - \| \
-      utils/int2sym.pl -f 5 $lang/words.txt \| \
-      utils/int2sym.pl -f 6-  $lang/phones.txt \| \
-      python3 ${basedir}/align2ctm.py --unk-p2g-cmd "$unk_p2g_cmd" --unk-word \'$unk_word\' --frame-shift $frame_shift \
-      '>' $dir/score_LMWT/$name.tmp2.ctm || exit 1;
+#    $cmd LMWT=$min_lmwt:$max_lmwt $dir/scoring/log/get_ctm3.LMWT.log \
+#      set -o pipefail '&&' mkdir -p $dir/score_LMWT/ '&&' \
+#      lattice-align-words-lexicon $lang/phones/align_lexicon.int $model "ark:$dir/score_LMWT/$name.1best.lat" ark:- \| \
+#      lattice-arc-post --acoustic-scale=0.1 $model ark:- - \| \
+#      utils/int2sym.pl -f 5 $lang/words.txt \| \
+#      utils/int2sym.pl -f 6-  $lang/phones.txt \| \
+#      python3 ${basedir}/align2ctm.py --unk-p2g-cmd "$unk_p2g_cmd" --unk-word \'$unk_word\' --frame-shift $frame_shift \
+#      '>' $dir/score_LMWT/$name.tmp2.ctm || exit 1;
+    $cmd LMWT=$min_lmwt:$max_lmwt $dir/scoring/log/get_ctm4.LMWT.log \
+		cat $dir/score_LMWT/$name.tmp1.ctm \| \
+                utils/int2sym.pl -f 5 $lang/words.txt \| \
+		$filter_cmd '>' $dir/score_LMWT/$name.ctm || exit 1;
 
 	# fourth, join the two CTMs generated above
-    $cmd LMWT=$min_lmwt:$max_lmwt $dir/scoring/log/get_ctm4.LMWT.log \
-		cut -d " " -f 6 $dir/score_LMWT/$name.tmp1.ctm  \| paste -d " " $dir/score_LMWT/$name.tmp2.ctm - \| \
-		$filter_cmd '>' $dir/score_LMWT/$name.ctm || exit 1;
+#    $cmd LMWT=$min_lmwt:$max_lmwt $dir/scoring/log/get_ctm4.LMWT.log \
+#		cut -d " " -f 6 $dir/score_LMWT/$name.tmp1.ctm  \| paste -d " " $dir/score_LMWT/$name.tmp2.ctm - \| \
+#		$filter_cmd '>' $dir/score_LMWT/$name.ctm || exit 1;
   
   else
     echo "$0: no $lang/phones/word_boundary.int: cannot align."

@@ -53,8 +53,6 @@ LM_SCALE?=10
 
 DO_PUNCTUATION?=no
 
-DO_UNSEGMENT_CTM?=no
-
 ifeq "yes" "$(DO_PUNCTUATION)"
   PUNCTUATE_JSON_CMD?=cat
   DOT_PUNCTUATED=.punctuated
@@ -65,7 +63,8 @@ endif
 where-am-i = $(lastword $(MAKEFILE_LIST))
 THIS_DIR := $(shell dirname $(call where-am-i))
 
-FINAL_PASS=$(ACOUSTIC_MODEL)_pruned_rescored_main_rnnlm_unk
+# FINAL_PASS=$(ACOUSTIC_MODEL)_pruned_rescored_main_rnnlm_unk
+FINAL_PASS=$(ACOUSTIC_MODEL)_pruned_rescored_main_unk
 
 LD_LIBRARY_PATH:=$(KALDI_ROOT)/tools/openfst/lib:$(LD_LIBRARY_PATH)
 
@@ -177,11 +176,11 @@ build/fst/%/graph_prunedlm: build/fst/data/prunedlm build/fst/%/final.mdl
 
 build/audio/base/%.wav: src-audio/%.wav
 	mkdir -p `dirname $@`
-	sox $^ -c 1 -b 16 build/audio/base/$*.wav rate -v 16k
+	sox $^ -c 1 -2 build/audio/base/$*.wav rate -v 16k
 
 build/audio/base/%.wav: src-audio/%.mp3
 	mkdir -p `dirname $@`
-	ffmpeg -i $^ -f sox - | sox -t sox - -c 1 -b 16 $@ rate -v 16k	
+	ffmpeg -i $^ -f sox - | sox -t sox - -c 1 -2 $@ rate -v 16k	
 
 build/audio/base/%.wav: src-audio/%.ogg
 	mkdir -p `dirname $@`
@@ -193,11 +192,11 @@ build/audio/base/%.wav: src-audio/%.mp2
 
 build/audio/base/%.wav: src-audio/%.m4a
 	mkdir -p `dirname $@`
-	ffmpeg -i $^ -f sox - | sox -t sox - -c 1 -b 16 $@ rate -v 16k
+	ffmpeg -i $^ -f sox - | sox -t sox - -c 1 -2 $@ rate -v 16k
 	
 build/audio/base/%.wav: src-audio/%.mp4
 	mkdir -p `dirname $@`
-	ffmpeg -i $^ -f sox - | sox -t sox - -c 1 -b 16 $@ rate -v 16k
+	ffmpeg -i $^ -f sox - | sox -t sox - -c 1 -2 $@ rate -v 16k
 
 build/audio/base/%.wav: src-audio/%.flac
 	mkdir -p `dirname $@`
@@ -206,12 +205,12 @@ build/audio/base/%.wav: src-audio/%.flac
 build/audio/base/%.wav: src-audio/%.amr
 	mkdir -p `dirname $@`
 	amrnb-decoder $^ $@.tmp.raw
-	sox -s -b 16 -c 1 -r 8000 $@.tmp.raw -c 1 build/audio/base/$*.wav rate -v 16k
+	sox -s -2 -c 1 -r 8000 $@.tmp.raw -c 1 build/audio/base/$*.wav rate -v 16k
 	rm $@.tmp.raw
 
 build/audio/base/%.wav: src-audio/%.mpg
 	mkdir -p `dirname $@`
-	ffmpeg -i $^ -f sox - | sox -t sox - -c 1 -b 16 build/audio/base/$*.wav rate -v 16k
+	ffmpeg -i $^ -f sox - | sox -t sox - -c 1 -2 build/audio/base/$*.wav rate -v 16k
 	
 # Speaker diarization
 build/diarization/%/show.seg: build/audio/base/%.wav
@@ -338,9 +337,10 @@ build/trans/%.segmented.splitw2.ctm: build/trans/%/decode/.ctm
 	cat build/trans/$*/decode/score_$(LM_SCALE)/`dirname $*`.ctm  | perl -npe 's/(.*)-(S\d+)---(\S+)/\1_\3_\2/' > $@
 
 %.with-compounds.ctm: %.splitw2.ctm build/fst/data/compounderlm	
-	python3 scripts/compound-ctm.py \
-		"python3 scripts/compounder.py build/fst/data/compounderlm/G.fst build/fst/data/compounderlm/words.txt" \
-		< $*.splitw2.ctm > $@
+	python3 scripts/glue-bpe-ctm.py < $*.splitw2.ctm > $@
+#	python3 scripts/compound-ctm.py \
+#		"python3 scripts/compounder.py build/fst/data/compounderlm/G.fst build/fst/data/compounderlm/words.txt" \
+#		< $*.splitw2.ctm > $@
 
 %.segmented.ctm: %.segmented.with-compounds.ctm
 	cat $^ | grep -v "++" |  grep -v "\[sil\]" | grep -v -e " $$" | perl -npe 's/\+//g' | sort -k1,1 -k 3,3g > $@
@@ -366,17 +366,9 @@ endif
 
 %.with-compounds.synced.ctm: %.segmented.with-compounds.ctm
 	cat $^ | ./scripts/unsegment-ctm.py | LC_ALL=C sort -k 1,1 -k 3,3n -k 4,4n > $@
-	
-ifeq "yes" "$(DO_UNSEGMENT_CTM)"
+
 %.synced.ctm: %.segmented.ctm
 	cat $^ | ./scripts/unsegment-ctm.py | LC_ALL=C sort -k 1,1 -k 3,3n -k 4,4n > $@
-else
-%.synced.ctm: %.segmented.ctm
-	cat $^ | ./scripts/format-ctm.py |\
-	awk '{split($$1,x,"-"); split(x[2],y,"_"); print y[2]+0" "NR" "$$0}' |\
-	LC_ALL=C sort -n -s -k1,1 |\
-	awk '{for (i=3; i<NF; i++) printf $$i" "; print $$NF}' > $@
-endif
 	
 %.ctm: %.synced.ctm
 	cat $^ | grep -v "<" > $@
@@ -399,9 +391,6 @@ build/trans/%/$(FINAL_PASS)$(DOT_PUNCTUATED).trs: build/trans/%/$(FINAL_PASS)$(D
 
 %.srt: %.json
 	./local/json2srt.py $^ > $@
-	
-%.spksrt: %.json	
-	./local/json2srtctm.py --nosplit --speakers $^ $@ $@.ctm
 
 %.txt: %.trs
 	cat $^  | grep -v "^<" > $@
@@ -496,4 +485,4 @@ build/sid/%/sid-result.txt: build/sid/%/lda_plda_scores
 
 # Also deletes the output files	
 .%.cleanest: .%.clean
-	rm -rf build/output/$*.{trs,txt,ctm,with-compounds.ctm,srt,spksrt,json}
+	rm -rf build/output/$*.{trs,txt,ctm,with-compounds.ctm,srt,json}
