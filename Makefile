@@ -63,8 +63,8 @@ endif
 where-am-i = $(lastword $(MAKEFILE_LIST))
 THIS_DIR := $(shell dirname $(call where-am-i))
 
-# FINAL_PASS=$(ACOUSTIC_MODEL)_pruned_rescored_main_rnnlm_unk
-FINAL_PASS=$(ACOUSTIC_MODEL)_pruned_rescored_main_unk
+FINAL_PASS=$(ACOUSTIC_MODEL)_pruned_rescored_main_rnnlm_unk
+#FINAL_PASS=$(ACOUSTIC_MODEL)_pruned_rescored_main_unk
 
 LD_LIBRARY_PATH:=$(KALDI_ROOT)/tools/openfst/lib:$(LD_LIBRARY_PATH)
 
