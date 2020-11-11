@@ -86,7 +86,7 @@ export
 	ln -s $(KALDI_ROOT)/scripts/rnnlm
 	mkdir -p src-audio
 
-.lang: build/fst/data/prunedlm_unk build/fst/$(ACOUSTIC_MODEL)/graph_prunedlm_unk build/fst/data/largelm_unk build/fst/data/rnnlm_unk build/fst/data/compounderlm
+.lang: build/fst/data/prunedlm_unk build/fst/$(ACOUSTIC_MODEL)/graph_prunedlm_unk build/fst/data/largelm_unk build/fst/data/rnnlm_unk
 
 build/fst/$(ACOUSTIC_MODEL)/final.mdl:
 	rm -rf `dirname $@`
@@ -336,11 +336,8 @@ build/trans/%/$(ACOUSTIC_MODEL)_pruned_rescored_main_rnnlm_unk/decode/log: build
 build/trans/%.segmented.splitw2.ctm: build/trans/%/decode/.ctm
 	cat build/trans/$*/decode/score_$(LM_SCALE)/`dirname $*`.ctm  | perl -npe 's/(.*)-(S\d+)---(\S+)/\1_\3_\2/' > $@
 
-%.with-compounds.ctm: %.splitw2.ctm build/fst/data/compounderlm	
+%.with-compounds.ctm: %.splitw2.ctm
 	python3 scripts/glue-bpe-ctm.py < $*.splitw2.ctm > $@
-#	python3 scripts/compound-ctm.py \
-#		"python3 scripts/compounder.py build/fst/data/compounderlm/G.fst build/fst/data/compounderlm/words.txt" \
-#		< $*.splitw2.ctm > $@
 
 %.segmented.ctm: %.segmented.with-compounds.ctm
 	cat $^ | grep -v "++" |  grep -v "\[sil\]" | grep -v -e " $$" | perl -npe 's/\+//g' | sort -k1,1 -k 3,3g > $@
